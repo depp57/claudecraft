@@ -61,6 +61,19 @@ class PlayerTest {
     }
 
     @Test
+    void eyeSitsAboveFeetAndBoxMatchesDimensions() {
+        Player player = new Player(new Vector3f(8.5f, 65.0f, 8.5f));
+
+        assertEquals(65.0f + Player.EYE_HEIGHT, player.eyePosition().y(), EPSILON);
+        assertEquals(8.5f, player.eyePosition().x(), EPSILON);
+
+        var box = player.boundingBox();
+        assertEquals(Player.WIDTH, box.maxX() - box.minX(), 1e-5f);
+        assertEquals(Player.HEIGHT, box.maxY() - box.minY(), 1e-5f);
+        assertEquals(65.0f, box.minY(), EPSILON);
+    }
+
+    @Test
     void spawnPositionIsCopiedNotAliased() {
         Vector3f spawn = new Vector3f(1.0f, 2.0f, 3.0f);
         Player player = new Player(spawn);

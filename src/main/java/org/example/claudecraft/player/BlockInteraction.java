@@ -1,6 +1,7 @@
 package org.example.claudecraft.player;
 
 import org.example.claudecraft.core.Input;
+import org.example.claudecraft.physics.AABB;
 import org.example.claudecraft.physics.RayHit;
 import org.example.claudecraft.physics.VoxelRaycaster;
 import org.example.claudecraft.world.BlockChangeListener;
@@ -16,11 +17,9 @@ import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
 
 /**
  * Breaking and placing blocks: left click breaks the targeted block, right
- * click places one against the targeted face. Changes are reported to the
- * {@link BlockChangeListener} so the renderer can remesh.
- *
- * <p>Placement does not yet check for overlap with the player; that arrives
- * with the physics step.
+ * click places one against the targeted face — unless it would overlap the
+ * player. Changes are reported to the {@link BlockChangeListener} so the
+ * renderer can remesh.
  */
 public final class BlockInteraction {
 
@@ -51,7 +50,7 @@ public final class BlockInteraction {
         }
 
         Optional<RayHit> hit = VoxelRaycaster.raycast(
-                world, player.position(), player.lookDirection(lookDirection), REACH_BLOCKS);
+                world, player.eyePosition(), player.lookDirection(lookDirection), REACH_BLOCKS);
         if (hit.isEmpty()) {
             return;
         }
@@ -72,7 +71,13 @@ public final class BlockInteraction {
         int x = hit.x() + hit.face().dx();
         int y = hit.y() + hit.face().dy();
         int z = hit.z() + hit.face().dz();
-        if (world.block(x, y, z) == BlockType.AIR && world.setBlock(x, y, z, PLACED_BLOCK)) {
+        if (world.block(x, y, z) != BlockType.AIR) {
+            return;
+        }
+        if (AABB.blockAt(x, y, z).intersects(player.boundingBox())) {
+            return; // would trap the player inside the new block
+        }
+        if (world.setBlock(x, y, z, PLACED_BLOCK)) {
             changeListener.onBlockChanged(x, y, z);
         }
     }

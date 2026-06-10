@@ -1,6 +1,5 @@
 package org.example.claudecraft.physics;
 
-import org.example.claudecraft.world.BlockType;
 import org.example.claudecraft.world.Direction;
 import org.example.claudecraft.world.World;
 import org.joml.Vector3fc;
@@ -94,6 +93,6 @@ public final class VoxelRaycaster {
     }
 
     private static boolean isSolid(World world, int x, int y, int z) {
-        return world.block(x, y, z) != BlockType.AIR;
+        return world.block(x, y, z).isSolid();
     }
 }

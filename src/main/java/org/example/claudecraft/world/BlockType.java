@@ -20,4 +20,9 @@ public enum BlockType {
     public boolean isOpaque() {
         return opaque;
     }
+
+    /** Solid blocks take part in collision and block rays; only air (and later fluids) do not. */
+    public boolean isSolid() {
+        return this != AIR;
+    }
 }

@@ -18,16 +18,18 @@ import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
 
 /**
  * Root game object wiring world, input, simulation and rendering together.
- * Chunks stream in around the player, who flies freely (WASD + mouse look,
- * Space/Shift for up/down), breaking blocks with left click and placing stone
- * with right click; ESC exits.
+ * Chunks stream in around the player, who walks and jumps over the terrain
+ * (WASD + mouse look, Space to jump), breaking blocks with left click and
+ * placing stone with right click; ESC exits.
  */
 public final class ClaudecraftGame implements Game, AutoCloseable {
 
     private static final long WORLD_SEED = 20260610L;
     private static final int LOAD_RADIUS_CHUNKS = 8;
-    /** Above the tallest terrain (64 ± 20); physics will put the player on the ground. */
+    /** Above the tallest terrain (64 ± 20); the player falls onto the ground from here. */
     private static final Vector3f SPAWN = new Vector3f(8.5f, 90.0f, 8.5f);
+    /** Falling below this means the player slipped out of the world; respawn instead. */
+    private static final float VOID_RESET_Y = -32.0f;
 
     private final Window window;
     private final Input input;
@@ -42,7 +44,7 @@ public final class ClaudecraftGame implements Game, AutoCloseable {
         this.input = new Input(window);
         this.world = new StreamingWorld(new NoiseTerrainGenerator(WORLD_SEED), LOAD_RADIUS_CHUNKS);
         this.player = new Player(SPAWN);
-        this.controller = new PlayerController(player, input);
+        this.controller = new PlayerController(player, input, world);
         this.renderer = new Renderer(world);
         this.interaction = new BlockInteraction(world, player, input, renderer::onBlockChanged);
         world.addListener(renderer);
@@ -57,6 +59,11 @@ public final class ClaudecraftGame implements Game, AutoCloseable {
         controller.update(dt);
         interaction.update();
         world.update(playerChunk());
+
+        if (player.position().y() < VOID_RESET_Y) {
+            player.setPosition(SPAWN.x, SPAWN.y, SPAWN.z);
+            player.velocity().zero();
+        }
     }
 
     private ChunkPos playerChunk() {
@@ -72,7 +79,7 @@ public final class ClaudecraftGame implements Game, AutoCloseable {
         if (width == 0 || height == 0) {
             return; // minimized
         }
-        renderer.camera().setPose(player.position(), player.yaw(), player.pitch());
+        renderer.camera().setPose(player.eyePosition(), player.yaw(), player.pitch());
         renderer.render((float) width / height);
     }
 
