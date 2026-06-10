@@ -100,6 +100,10 @@ public final class ShaderProgram implements AutoCloseable {
         glUniform3f(location(name), value.x, value.y, value.z);
     }
 
+    public void setUniform(String name, float x, float y, float z) {
+        glUniform3f(location(name), x, y, z);
+    }
+
     public void setUniform(String name, Matrix4fc value) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             FloatBuffer buffer = stack.mallocFloat(16);

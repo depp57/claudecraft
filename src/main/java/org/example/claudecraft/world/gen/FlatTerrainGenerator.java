@@ -2,6 +2,7 @@ package org.example.claudecraft.world.gen;
 
 import org.example.claudecraft.world.BlockType;
 import org.example.claudecraft.world.Chunk;
+import org.example.claudecraft.world.ChunkPos;
 
 /**
  * Generates flat terrain: a grass surface at a fixed height, a few layers of
@@ -25,7 +26,7 @@ public final class FlatTerrainGenerator implements TerrainGenerator {
     }
 
     @Override
-    public void generate(Chunk chunk) {
+    public void generate(Chunk chunk, ChunkPos position) {
         for (int x = 0; x < Chunk.SIZE_X; x++) {
             for (int z = 0; z < Chunk.SIZE_Z; z++) {
                 for (int y = 0; y <= groundHeight; y++) {

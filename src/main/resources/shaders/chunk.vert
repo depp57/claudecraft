@@ -5,6 +5,7 @@ layout (location = 1) in vec2 aTexCoord;
 layout (location = 2) in float aLight;
 
 uniform mat4 uViewProjection;
+uniform vec3 uChunkOrigin;
 
 out vec2 vTexCoord;
 out float vLight;
@@ -12,5 +13,5 @@ out float vLight;
 void main() {
     vTexCoord = aTexCoord;
     vLight = aLight;
-    gl_Position = uViewProjection * vec4(aPosition, 1.0);
+    gl_Position = uViewProjection * vec4(aPosition + uChunkOrigin, 1.0);
 }

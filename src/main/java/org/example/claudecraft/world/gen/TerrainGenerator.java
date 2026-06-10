@@ -1,6 +1,7 @@
 package org.example.claudecraft.world.gen;
 
 import org.example.claudecraft.world.Chunk;
+import org.example.claudecraft.world.ChunkPos;
 
 /**
  * Fills chunks with terrain. Implementations must be deterministic for a given
@@ -9,6 +10,10 @@ import org.example.claudecraft.world.Chunk;
  */
 public interface TerrainGenerator {
 
-    /** Populates the given (typically empty) chunk with blocks. */
-    void generate(Chunk chunk);
+    /**
+     * Populates the given (typically empty) chunk with blocks. The chunk's
+     * grid position lets implementations sample world-space noise so terrain
+     * continues seamlessly across chunk borders.
+     */
+    void generate(Chunk chunk, ChunkPos position);
 }
