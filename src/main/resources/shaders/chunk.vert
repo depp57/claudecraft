@@ -8,16 +8,19 @@ uniform mat4 uViewProjection;
 uniform vec3 uChunkOrigin;
 // Normalized direction the sunlight travels (from sun into the world).
 uniform vec3 uSunDirection;
+uniform float uAmbient;
+uniform float uSunStrength;
+uniform vec3 uCameraPosition;
 
 out vec2 vTexCoord;
 // Normals are constant per face, so the light level is too.
 flat out float vLight;
-
-const float AMBIENT = 0.45;
-const float SUN_STRENGTH = 0.55;
+out float vFogDistance;
 
 void main() {
+    vec3 worldPosition = aPosition + uChunkOrigin;
     vTexCoord = aTexCoord;
-    vLight = AMBIENT + SUN_STRENGTH * max(dot(aNormal, -uSunDirection), 0.0);
-    gl_Position = uViewProjection * vec4(aPosition + uChunkOrigin, 1.0);
+    vLight = uAmbient + uSunStrength * max(dot(aNormal, -uSunDirection), 0.0);
+    vFogDistance = distance(worldPosition, uCameraPosition);
+    gl_Position = uViewProjection * vec4(worldPosition, 1.0);
 }

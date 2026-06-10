@@ -8,6 +8,7 @@ import org.example.claudecraft.player.Player;
 import org.example.claudecraft.player.PlayerController;
 import org.example.claudecraft.render.Renderer;
 import org.example.claudecraft.world.ChunkPos;
+import org.example.claudecraft.world.DayNightCycle;
 import org.example.claudecraft.world.StreamingWorld;
 import org.example.claudecraft.world.gen.NoiseTerrainGenerator;
 import org.joml.Vector3f;
@@ -30,6 +31,9 @@ public final class ClaudecraftGame implements Game, AutoCloseable {
     private static final Vector3f SPAWN = new Vector3f(8.5f, 90.0f, 8.5f);
     /** Falling below this means the player slipped out of the world; respawn instead. */
     private static final float VOID_RESET_Y = -32.0f;
+    private static final float DAY_LENGTH_SECONDS = 60.0f;
+    /** Start mid-morning so the world is well-lit on launch. */
+    private static final float DAY_START_FRACTION = 0.1f;
 
     private final Window window;
     private final Input input;
@@ -38,6 +42,7 @@ public final class ClaudecraftGame implements Game, AutoCloseable {
     private final PlayerController controller;
     private final Renderer renderer;
     private final BlockInteraction interaction;
+    private final DayNightCycle dayNightCycle = new DayNightCycle(DAY_LENGTH_SECONDS, DAY_START_FRACTION);
 
     public ClaudecraftGame(Window window) {
         this.window = Objects.requireNonNull(window, "window");
@@ -59,6 +64,7 @@ public final class ClaudecraftGame implements Game, AutoCloseable {
         controller.update(dt);
         interaction.update();
         world.update(playerChunk());
+        dayNightCycle.update(dt);
 
         if (player.position().y() < VOID_RESET_Y) {
             player.setPosition(SPAWN.x, SPAWN.y, SPAWN.z);
@@ -80,7 +86,7 @@ public final class ClaudecraftGame implements Game, AutoCloseable {
             return; // minimized
         }
         renderer.camera().setPose(player.eyePosition(), player.yaw(), player.pitch());
-        renderer.render((float) width / height);
+        renderer.render((float) width / height, dayNightCycle);
     }
 
     @Override

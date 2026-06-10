@@ -22,12 +22,30 @@ public final class Camera {
     private float yaw;
     private float pitch;
     private final Matrix4f viewProjection = new Matrix4f();
+    private final Matrix4f skyInverse = new Matrix4f();
 
     /** Updates the camera pose; angles in radians. */
     public void setPose(Vector3fc position, float yaw, float pitch) {
         this.position.set(position);
         this.yaw = yaw;
         this.pitch = pitch;
+    }
+
+    /** Read-only view of the eye position; valid until the next {@link #setPose}. */
+    public Vector3fc position() {
+        return position;
+    }
+
+    /**
+     * Inverse of projection × rotation-only view, for turning NDC coordinates
+     * back into view rays (skybox). The returned matrix is reused across
+     * frames — consume it immediately.
+     */
+    public Matrix4fc skyViewProjectionInverse(float aspectRatio) {
+        return skyInverse.setPerspective(FOV_RADIANS, aspectRatio, NEAR_PLANE, FAR_PLANE)
+                .rotateX(pitch)
+                .rotateY(yaw)
+                .invert();
     }
 
     /**

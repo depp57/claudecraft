@@ -2,7 +2,7 @@ package org.example.claudecraft.render;
 
 import org.example.claudecraft.util.Resources;
 import org.joml.Matrix4fc;
-import org.joml.Vector3f;
+import org.joml.Vector3fc;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.FloatBuffer;
@@ -96,8 +96,8 @@ public final class ShaderProgram implements AutoCloseable {
         glUniform1f(location(name), value);
     }
 
-    public void setUniform(String name, Vector3f value) {
-        glUniform3f(location(name), value.x, value.y, value.z);
+    public void setUniform(String name, Vector3fc value) {
+        glUniform3f(location(name), value.x(), value.y(), value.z());
     }
 
     public void setUniform(String name, float x, float y) {
