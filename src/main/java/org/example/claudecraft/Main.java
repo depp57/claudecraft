@@ -14,8 +14,9 @@ public final class Main {
     }
 
     public static void main(String[] args) {
-        try (Window window = new Window(TITLE, WIDTH, HEIGHT)) {
-            new GameLoop(window, new ClaudecraftGame(window)).run();
+        try (Window window = new Window(TITLE, WIDTH, HEIGHT);
+             ClaudecraftGame game = new ClaudecraftGame(window)) {
+            new GameLoop(window, game).run();
         }
     }
 }

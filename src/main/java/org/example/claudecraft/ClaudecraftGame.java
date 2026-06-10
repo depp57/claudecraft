@@ -10,9 +10,9 @@ import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
 
 /**
  * Root game object wiring input, simulation and rendering together.
- * Currently renders an empty sky and exits on ESC.
+ * Currently renders a demo quad against the sky and exits on ESC.
  */
-public final class ClaudecraftGame implements Game {
+public final class ClaudecraftGame implements Game, AutoCloseable {
 
     private final Window window;
     private final Renderer renderer;
@@ -31,6 +31,11 @@ public final class ClaudecraftGame implements Game {
 
     @Override
     public void render(float alpha) {
-        renderer.beginFrame();
+        renderer.render();
+    }
+
+    @Override
+    public void close() {
+        renderer.close();
     }
 }
