@@ -100,6 +100,10 @@ public final class ShaderProgram implements AutoCloseable {
         glUniform3f(location(name), value.x, value.y, value.z);
     }
 
+    public void setUniform(String name, float x, float y) {
+        glUniform2f(location(name), x, y);
+    }
+
     public void setUniform(String name, float x, float y, float z) {
         glUniform3f(location(name), x, y, z);
     }

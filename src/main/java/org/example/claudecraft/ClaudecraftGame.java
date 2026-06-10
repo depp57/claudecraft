@@ -3,6 +3,7 @@ package org.example.claudecraft;
 import org.example.claudecraft.core.Game;
 import org.example.claudecraft.core.Input;
 import org.example.claudecraft.core.Window;
+import org.example.claudecraft.player.BlockInteraction;
 import org.example.claudecraft.player.Player;
 import org.example.claudecraft.player.PlayerController;
 import org.example.claudecraft.render.Renderer;
@@ -20,7 +21,8 @@ import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
 /**
  * Root game object wiring world, input, simulation and rendering together.
  * The player flies freely (WASD + mouse look, Space/Shift for up/down) over
- * noise-generated hills; ESC exits.
+ * noise-generated hills, breaking blocks with left click and placing stone
+ * with right click; ESC exits.
  */
 public final class ClaudecraftGame implements Game, AutoCloseable {
 
@@ -34,6 +36,7 @@ public final class ClaudecraftGame implements Game, AutoCloseable {
     private final Player player;
     private final PlayerController controller;
     private final Renderer renderer;
+    private final BlockInteraction interaction;
 
     public ClaudecraftGame(Window window) {
         this.window = Objects.requireNonNull(window, "window");
@@ -42,6 +45,7 @@ public final class ClaudecraftGame implements Game, AutoCloseable {
         this.player = new Player(spawnPoint(world));
         this.controller = new PlayerController(player, input);
         this.renderer = new Renderer(world);
+        this.interaction = new BlockInteraction(world, player, input, renderer::onBlockChanged);
     }
 
     /** Eye position above the terrain surface in the center of the world. */
@@ -61,6 +65,7 @@ public final class ClaudecraftGame implements Game, AutoCloseable {
             window.requestClose();
         }
         controller.update(dt);
+        interaction.update();
     }
 
     @Override

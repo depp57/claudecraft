@@ -13,8 +13,9 @@ import java.util.Set;
  * on the origin. Placeholder for the streaming world that will load and unload
  * chunks around the player asynchronously.
  *
- * <p>Immutable after construction (until block editing lands); safe to read
- * from any thread.
+ * <p>The chunk set is fixed after construction, but block contents are
+ * mutable via {@link #setBlock}. Edits happen on the simulation thread only;
+ * concurrent readers (e.g. future async meshing) must coordinate with it.
  */
 public final class GeneratedWorld implements World {
 
@@ -49,6 +50,25 @@ public final class GeneratedWorld implements World {
             return BlockType.AIR;
         }
         return chunk.block(Math.floorMod(worldX, Chunk.SIZE_X), worldY, Math.floorMod(worldZ, Chunk.SIZE_Z));
+    }
+
+    @Override
+    public boolean setBlock(int worldX, int worldY, int worldZ, BlockType type) {
+        Objects.requireNonNull(type, "type");
+        if (worldY < 0 || worldY >= Chunk.SIZE_Y) {
+            return false;
+        }
+        Chunk chunk = chunks.get(ChunkPos.containing(worldX, worldZ));
+        if (chunk == null) {
+            return false;
+        }
+        int localX = Math.floorMod(worldX, Chunk.SIZE_X);
+        int localZ = Math.floorMod(worldZ, Chunk.SIZE_Z);
+        if (chunk.block(localX, worldY, localZ) == type) {
+            return false;
+        }
+        chunk.setBlock(localX, worldY, localZ, type);
+        return true;
     }
 
     @Override

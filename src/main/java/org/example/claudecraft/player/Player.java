@@ -42,6 +42,18 @@ public final class Player {
         return position;
     }
 
+    /**
+     * Writes the unit view direction for the current yaw/pitch into
+     * {@code dest} and returns it.
+     */
+    public Vector3f lookDirection(Vector3f dest) {
+        float cosPitch = Math.cos(pitch);
+        return dest.set(
+                Math.sin(yaw) * cosPitch,
+                -Math.sin(pitch),
+                -Math.cos(yaw) * cosPitch);
+    }
+
     public float yaw() {
         return yaw;
     }

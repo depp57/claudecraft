@@ -2,6 +2,7 @@ package org.example.claudecraft.render;
 
 import org.example.claudecraft.render.chunk.ChunkRenderer;
 import org.example.claudecraft.render.chunk.CullingChunkMesher;
+import org.example.claudecraft.world.ChunkPos;
 import org.example.claudecraft.world.World;
 
 import java.util.Objects;
@@ -28,13 +29,15 @@ public final class Renderer implements AutoCloseable {
 
     private static final int ATLAS_TEXTURE_UNIT = 0;
 
+    private final World world;
     private final ShaderProgram shader;
     private final Texture atlas;
     private final ChunkRenderer chunkRenderer;
+    private final CrosshairRenderer crosshair;
     private final Camera camera = new Camera();
 
     public Renderer(World world) {
-        Objects.requireNonNull(world, "world");
+        this.world = Objects.requireNonNull(world, "world");
 
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
@@ -43,6 +46,16 @@ public final class Renderer implements AutoCloseable {
         shader = ShaderProgram.load("/shaders/chunk.vert", "/shaders/chunk.frag");
         atlas = Texture.loadFromClasspath("/textures/atlas.png");
         chunkRenderer = new ChunkRenderer(world, new CullingChunkMesher());
+        crosshair = new CrosshairRenderer();
+    }
+
+    /**
+     * Rebuilds the mesh of the chunk containing the changed block. Runs GL
+     * uploads, so while update and render share the main thread this may be
+     * called from the simulation tick.
+     */
+    public void onBlockChanged(int worldX, int worldY, int worldZ) {
+        chunkRenderer.remesh(world, ChunkPos.containing(worldX, worldZ));
     }
 
     /** The camera whose pose callers update before each frame. */
@@ -64,10 +77,13 @@ public final class Renderer implements AutoCloseable {
         atlas.bind(ATLAS_TEXTURE_UNIT);
         chunkRenderer.draw(shader);
         shader.unbind();
+
+        crosshair.draw(aspectRatio);
     }
 
     @Override
     public void close() {
+        crosshair.close();
         chunkRenderer.close();
         atlas.close();
         shader.close();

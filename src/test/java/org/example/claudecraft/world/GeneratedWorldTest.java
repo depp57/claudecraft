@@ -34,4 +34,21 @@ class GeneratedWorldTest {
         assertEquals(BlockType.AIR, world.block(0, -1, 0));
         assertEquals(BlockType.AIR, world.block(0, Chunk.SIZE_Y, 0));
     }
+
+    @Test
+    void setBlockEditsLoadedChunks() {
+        assertTrue(world.setBlock(-5, GROUND + 5, 20, BlockType.STONE));
+        assertEquals(BlockType.STONE, world.block(-5, GROUND + 5, 20));
+
+        assertTrue(world.setBlock(-5, GROUND + 5, 20, BlockType.AIR));
+        assertEquals(BlockType.AIR, world.block(-5, GROUND + 5, 20));
+    }
+
+    @Test
+    void setBlockRejectsNoOpsAndUnloadedPositions() {
+        assertFalse(world.setBlock(0, GROUND, 0, BlockType.GRASS), "same type is a no-op");
+        assertFalse(world.setBlock(1000, GROUND, 0, BlockType.STONE), "outside loaded chunks");
+        assertFalse(world.setBlock(0, -1, 0, BlockType.STONE), "below the world");
+        assertFalse(world.setBlock(0, Chunk.SIZE_Y, 0, BlockType.STONE), "above the world");
+    }
 }

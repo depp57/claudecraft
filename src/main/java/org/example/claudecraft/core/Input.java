@@ -15,6 +15,9 @@ import static org.lwjgl.glfw.GLFW.*;
  */
 public final class Input {
 
+    /** Buttons with edge detection: {@code GLFW_MOUSE_BUTTON_LEFT} and {@code _RIGHT}. */
+    private static final int TRACKED_BUTTONS = 2;
+
     private final Window window;
 
     private double cursorX;
@@ -24,6 +27,8 @@ public final class Input {
     private boolean cursorSeen;
     private float mouseDeltaX;
     private float mouseDeltaY;
+    private final boolean[] buttonDown = new boolean[TRACKED_BUTTONS];
+    private final boolean[] buttonJustPressed = new boolean[TRACKED_BUTTONS];
 
     public Input(Window window) {
         this.window = Objects.requireNonNull(window, "window");
@@ -45,12 +50,27 @@ public final class Input {
         });
     }
 
-    /** Latches mouse movement since the previous tick into the delta accessors. */
+    /** Latches mouse movement and button edges since the previous tick. */
     public void beginTick() {
         mouseDeltaX = (float) (cursorX - lastCursorX);
         mouseDeltaY = (float) (cursorY - lastCursorY);
         lastCursorX = cursorX;
         lastCursorY = cursorY;
+
+        for (int button = 0; button < TRACKED_BUTTONS; button++) {
+            boolean down = glfwGetMouseButton(window.handle(), button) == GLFW_PRESS;
+            buttonJustPressed[button] = down && !buttonDown[button];
+            buttonDown[button] = down;
+        }
+    }
+
+    /**
+     * Returns true if the given {@code GLFW_MOUSE_BUTTON_*} button went from
+     * released to pressed since the previous tick.
+     */
+    public boolean isButtonJustPressed(int button) {
+        Objects.checkIndex(button, TRACKED_BUTTONS);
+        return buttonJustPressed[button];
     }
 
     /** Horizontal cursor movement since the last tick, in pixels (positive = right). */

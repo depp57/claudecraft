@@ -15,6 +15,14 @@ public interface World {
      */
     BlockType block(int worldX, int worldY, int worldZ);
 
+    /**
+     * Replaces the block at the given world position.
+     *
+     * @return true if the position lies in a loaded chunk and the block
+     *         actually changed; false for out-of-world positions or no-ops
+     */
+    boolean setBlock(int worldX, int worldY, int worldZ, BlockType type);
+
     /** The chunk at the given grid position, if loaded. */
     Optional<Chunk> chunk(ChunkPos position);
 

@@ -12,8 +12,8 @@ import java.util.Objects;
 /**
  * Uploads one GPU mesh per loaded chunk and draws them all, positioning each
  * via the {@code uChunkOrigin} uniform so mesh vertices stay chunk-local.
- * Meshes are built eagerly at construction; remeshing on block edits and
- * frustum culling come later.
+ * Meshes are built eagerly at construction; {@link #remesh} rebuilds a single
+ * chunk after block edits. Frustum culling comes later.
  *
  * <p>Owns the chunk meshes; release them with {@link #close()}. Render thread
  * only.
@@ -22,19 +22,37 @@ public final class ChunkRenderer implements AutoCloseable {
 
     private static final String CHUNK_ORIGIN_UNIFORM = "uChunkOrigin";
 
+    private final ChunkMesher mesher;
     private final Map<ChunkPos, Mesh> meshes = new LinkedHashMap<>();
 
     public ChunkRenderer(World world, ChunkMesher mesher) {
         Objects.requireNonNull(world, "world");
-        Objects.requireNonNull(mesher, "mesher");
+        this.mesher = Objects.requireNonNull(mesher, "mesher");
         for (ChunkPos position : world.chunkPositions()) {
-            world.chunk(position).ifPresent(chunk -> {
-                MeshData data = mesher.mesh(chunk);
-                if (!data.isEmpty()) {
-                    meshes.put(position, new Mesh(data.vertices(), data.indices()));
-                }
-            });
+            buildMesh(world, position);
         }
+    }
+
+    /**
+     * Rebuilds the mesh of one chunk from current world data. Neighbor chunks
+     * need no rebuild while the mesher treats out-of-chunk blocks as air —
+     * their border faces are always emitted; revisit with cross-chunk culling.
+     */
+    public void remesh(World world, ChunkPos position) {
+        Mesh previous = meshes.remove(position);
+        if (previous != null) {
+            previous.close();
+        }
+        buildMesh(world, position);
+    }
+
+    private void buildMesh(World world, ChunkPos position) {
+        world.chunk(position).ifPresent(chunk -> {
+            MeshData data = mesher.mesh(chunk);
+            if (!data.isEmpty()) {
+                meshes.put(position, new Mesh(data.vertices(), data.indices()));
+            }
+        });
     }
 
     /** Draws all chunk meshes; the shader must already be bound. */
