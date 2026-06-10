@@ -10,9 +10,8 @@ import static org.lwjgl.opengl.GL30C.glGenVertexArrays;
 /**
  * An indexed triangle mesh on the GPU (VAO + vertex/index buffers).
  *
- * <p>Vertex layout is interleaved {@code vec3 position, vec3 color}, matching
- * attribute locations 0 and 1 of {@code basic.vert}. The layout will grow
- * (UVs, normals/light) once the texture atlas and chunk meshing land.
+ * <p>Vertex layout is interleaved {@code vec3 position, vec2 texCoord,
+ * float light}, matching attribute locations 0–2 of {@code chunk.vert}.
  *
  * <p>Owns its GL objects; release them with {@link #close()}. Render thread only.
  */
@@ -52,8 +51,10 @@ public final class Mesh implements AutoCloseable {
         int strideBytes = FLOATS_PER_VERTEX * Float.BYTES;
         glVertexAttribPointer(0, 3, GL_FLOAT, false, strideBytes, 0);
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 3, GL_FLOAT, false, strideBytes, 3L * Float.BYTES);
+        glVertexAttribPointer(1, 2, GL_FLOAT, false, strideBytes, 3L * Float.BYTES);
         glEnableVertexAttribArray(1);
+        glVertexAttribPointer(2, 1, GL_FLOAT, false, strideBytes, 5L * Float.BYTES);
+        glEnableVertexAttribArray(2);
 
         indexBufferId = glGenBuffers();
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferId);

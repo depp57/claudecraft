@@ -1,13 +1,16 @@
 #version 330 core
 
 layout (location = 0) in vec3 aPosition;
-layout (location = 1) in vec3 aColor;
+layout (location = 1) in vec2 aTexCoord;
+layout (location = 2) in float aLight;
 
 uniform mat4 uViewProjection;
 
-out vec3 vColor;
+out vec2 vTexCoord;
+out float vLight;
 
 void main() {
-    vColor = aColor;
+    vTexCoord = aTexCoord;
+    vLight = aLight;
     gl_Position = uViewProjection * vec4(aPosition, 1.0);
 }

@@ -59,6 +59,26 @@ class CullingChunkMesherTest {
     }
 
     @Test
+    void topFaceCarriesGrassTopUvsAndFullBrightness() {
+        Chunk chunk = new Chunk();
+        chunk.setBlock(8, 100, 8, BlockType.GRASS);
+
+        // Faces are emitted in Direction order, so the UP face is the first four vertices.
+        float[] vertices = mesher.mesh(chunk).vertices();
+        TextureTile grassTop = BlockTextures.tileFor(BlockType.GRASS, org.example.claudecraft.world.Direction.UP);
+
+        for (int corner = 0; corner < VERTICES_PER_FACE; corner++) {
+            int base = corner * FLOATS_PER_VERTEX;
+            float u = vertices[base + 3];
+            float v = vertices[base + 4];
+            float light = vertices[base + 5];
+            assertTrue(u >= grassTop.u0() && u <= grassTop.u1(), "u inside grass-top tile, got " + u);
+            assertTrue(v >= grassTop.v0() && v <= grassTop.v1(), "v inside grass-top tile, got " + v);
+            assertEquals(1.0f, light, "top face is fully lit");
+        }
+    }
+
+    @Test
     void isolatedBlockGeometrySpansExactlyOneCube() {
         Chunk chunk = new Chunk();
         chunk.setBlock(8, 100, 8, BlockType.STONE);

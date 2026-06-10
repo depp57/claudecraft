@@ -12,9 +12,9 @@ import org.example.claudecraft.world.Direction;
  * until cross-chunk lookups arrive with the multi-chunk world.
  *
  * <p>Quads are wound counter-clockwise seen from outside the block, so
- * {@code GL_CULL_FACE} with the default CCW front face works. Until the
- * texture atlas lands, blocks get placeholder colors, darkened per face
- * direction for depth perception.
+ * {@code GL_CULL_FACE} with the default CCW front face works. Each vertex
+ * carries atlas UVs (via {@link BlockTextures}) and a per-face brightness
+ * factor for depth perception until real lighting lands.
  */
 public final class CullingChunkMesher implements ChunkMesher {
 
@@ -29,9 +29,14 @@ public final class CullingChunkMesher implements ChunkMesher {
     private static final float[] WEST_CORNERS = {0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0};
     private static final float[] EAST_CORNERS = {1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1};
 
-    private static final float[] GRASS_COLOR = {0.35f, 0.65f, 0.25f};
-    private static final float[] DIRT_COLOR = {0.45f, 0.32f, 0.22f};
-    private static final float[] STONE_COLOR = {0.55f, 0.55f, 0.55f};
+    // UV selectors (4 corners × uv, 0 = tile u0/v0, 1 = tile u1/v1) matching the
+    // corner order above; side faces keep the tile upright (v0 at the top edge).
+    private static final float[] UP_UVS = {0, 0, 0, 1, 1, 1, 1, 0};
+    private static final float[] DOWN_UVS = {0, 0, 1, 0, 1, 1, 0, 1};
+    private static final float[] NORTH_UVS = {0, 1, 0, 0, 1, 0, 1, 1};
+    private static final float[] SOUTH_UVS = {0, 1, 1, 1, 1, 0, 0, 0};
+    private static final float[] WEST_UVS = {0, 1, 1, 1, 1, 0, 0, 0};
+    private static final float[] EAST_UVS = {0, 1, 0, 0, 1, 0, 1, 1};
 
     @Override
     public MeshData mesh(Chunk chunk) {
@@ -74,17 +79,19 @@ public final class CullingChunkMesher implements ChunkMesher {
 
     private static void emitFace(FloatList vertices, int x, int y, int z, Direction direction, BlockType block) {
         float[] corners = cornersOf(direction);
-        float[] color = colorOf(block);
+        float[] uvSelectors = uvSelectorsOf(direction);
+        TextureTile tile = BlockTextures.tileFor(block, direction);
         float brightness = brightnessOf(direction);
 
         for (int corner = 0; corner < VERTICES_PER_FACE; corner++) {
-            int base = corner * 3;
-            vertices.add(x + corners[base]);
-            vertices.add(y + corners[base + 1]);
-            vertices.add(z + corners[base + 2]);
-            vertices.add(color[0] * brightness);
-            vertices.add(color[1] * brightness);
-            vertices.add(color[2] * brightness);
+            int positionBase = corner * 3;
+            vertices.add(x + corners[positionBase]);
+            vertices.add(y + corners[positionBase + 1]);
+            vertices.add(z + corners[positionBase + 2]);
+            int uvBase = corner * 2;
+            vertices.add(uvSelectors[uvBase] == 0.0f ? tile.u0() : tile.u1());
+            vertices.add(uvSelectors[uvBase + 1] == 0.0f ? tile.v0() : tile.v1());
+            vertices.add(brightness);
         }
     }
 
@@ -99,21 +106,23 @@ public final class CullingChunkMesher implements ChunkMesher {
         };
     }
 
+    private static float[] uvSelectorsOf(Direction direction) {
+        return switch (direction) {
+            case UP -> UP_UVS;
+            case DOWN -> DOWN_UVS;
+            case NORTH -> NORTH_UVS;
+            case SOUTH -> SOUTH_UVS;
+            case WEST -> WEST_UVS;
+            case EAST -> EAST_UVS;
+        };
+    }
+
     private static float brightnessOf(Direction direction) {
         return switch (direction) {
             case UP -> 1.0f;
             case DOWN -> 0.5f;
             case NORTH, SOUTH -> 0.8f;
             case WEST, EAST -> 0.65f;
-        };
-    }
-
-    private static float[] colorOf(BlockType block) {
-        return switch (block) {
-            case GRASS -> GRASS_COLOR;
-            case DIRT -> DIRT_COLOR;
-            case STONE -> STONE_COLOR;
-            case AIR -> throw new IllegalArgumentException("AIR has no faces to color");
         };
     }
 }

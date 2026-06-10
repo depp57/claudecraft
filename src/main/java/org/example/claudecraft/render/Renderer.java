@@ -28,7 +28,10 @@ public final class Renderer implements AutoCloseable {
 
     public static final int GROUND_HEIGHT = 64;
 
+    private static final int ATLAS_TEXTURE_UNIT = 0;
+
     private final ShaderProgram shader;
+    private final Texture atlas;
     private final Mesh chunkMesh;
     private final Camera camera = new Camera();
 
@@ -37,7 +40,8 @@ public final class Renderer implements AutoCloseable {
         glEnable(GL_CULL_FACE);
         glClearColor(SKY_RED, SKY_GREEN, SKY_BLUE, 1.0f);
 
-        shader = ShaderProgram.load("/shaders/basic.vert", "/shaders/basic.frag");
+        shader = ShaderProgram.load("/shaders/chunk.vert", "/shaders/chunk.frag");
+        atlas = Texture.loadFromClasspath("/textures/atlas.png");
 
         Chunk chunk = new Chunk();
         new FlatTerrainGenerator(GROUND_HEIGHT).generate(chunk);
@@ -60,6 +64,8 @@ public final class Renderer implements AutoCloseable {
 
         shader.bind();
         shader.setUniform("uViewProjection", camera.viewProjection(aspectRatio));
+        shader.setUniform("uTexture", ATLAS_TEXTURE_UNIT);
+        atlas.bind(ATLAS_TEXTURE_UNIT);
         chunkMesh.draw();
         shader.unbind();
     }
@@ -67,6 +73,7 @@ public final class Renderer implements AutoCloseable {
     @Override
     public void close() {
         chunkMesh.close();
+        atlas.close();
         shader.close();
     }
 }
