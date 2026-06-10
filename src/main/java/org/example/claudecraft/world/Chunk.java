@@ -41,6 +41,16 @@ public final class Chunk {
         blocks[index(x, y, z)] = (byte) type.ordinal();
     }
 
+    /**
+     * An independent copy of this chunk's blocks, e.g. a snapshot handed to a
+     * meshing worker so simulation edits cannot race the read.
+     */
+    public Chunk copy() {
+        Chunk copy = new Chunk();
+        System.arraycopy(blocks, 0, copy.blocks, 0, blocks.length);
+        return copy;
+    }
+
     private static int index(int x, int y, int z) {
         if (!contains(x, y, z)) {
             throw new IndexOutOfBoundsException(

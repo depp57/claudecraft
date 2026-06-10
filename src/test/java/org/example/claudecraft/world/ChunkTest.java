@@ -39,6 +39,21 @@ class ChunkTest {
     }
 
     @Test
+    void copyIsIndependentOfOriginal() {
+        Chunk original = new Chunk();
+        original.setBlock(1, 2, 3, BlockType.STONE);
+
+        Chunk copy = original.copy();
+        assertEquals(BlockType.STONE, copy.block(1, 2, 3));
+
+        original.setBlock(1, 2, 3, BlockType.DIRT);
+        assertEquals(BlockType.STONE, copy.block(1, 2, 3));
+
+        copy.setBlock(4, 5, 6, BlockType.GRASS);
+        assertEquals(BlockType.AIR, original.block(4, 5, 6));
+    }
+
+    @Test
     void containsMatchesBounds() {
         assertTrue(Chunk.contains(0, 0, 0));
         assertTrue(Chunk.contains(15, 255, 15));

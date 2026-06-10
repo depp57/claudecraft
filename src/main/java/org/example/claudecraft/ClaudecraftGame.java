@@ -7,10 +7,8 @@ import org.example.claudecraft.player.BlockInteraction;
 import org.example.claudecraft.player.Player;
 import org.example.claudecraft.player.PlayerController;
 import org.example.claudecraft.render.Renderer;
-import org.example.claudecraft.world.BlockType;
-import org.example.claudecraft.world.Chunk;
-import org.example.claudecraft.world.GeneratedWorld;
-import org.example.claudecraft.world.World;
+import org.example.claudecraft.world.ChunkPos;
+import org.example.claudecraft.world.StreamingWorld;
 import org.example.claudecraft.world.gen.NoiseTerrainGenerator;
 import org.joml.Vector3f;
 
@@ -20,19 +18,20 @@ import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
 
 /**
  * Root game object wiring world, input, simulation and rendering together.
- * The player flies freely (WASD + mouse look, Space/Shift for up/down) over
- * noise-generated hills, breaking blocks with left click and placing stone
+ * Chunks stream in around the player, who flies freely (WASD + mouse look,
+ * Space/Shift for up/down), breaking blocks with left click and placing stone
  * with right click; ESC exits.
  */
 public final class ClaudecraftGame implements Game, AutoCloseable {
 
     private static final long WORLD_SEED = 20260610L;
-    private static final int WORLD_RADIUS_CHUNKS = 4;
-    private static final float SPAWN_EYE_HEIGHT = 3.0f;
+    private static final int LOAD_RADIUS_CHUNKS = 8;
+    /** Above the tallest terrain (64 ± 20); physics will put the player on the ground. */
+    private static final Vector3f SPAWN = new Vector3f(8.5f, 90.0f, 8.5f);
 
     private final Window window;
     private final Input input;
-    private final World world;
+    private final StreamingWorld world;
     private final Player player;
     private final PlayerController controller;
     private final Renderer renderer;
@@ -41,21 +40,12 @@ public final class ClaudecraftGame implements Game, AutoCloseable {
     public ClaudecraftGame(Window window) {
         this.window = Objects.requireNonNull(window, "window");
         this.input = new Input(window);
-        this.world = new GeneratedWorld(new NoiseTerrainGenerator(WORLD_SEED), WORLD_RADIUS_CHUNKS);
-        this.player = new Player(spawnPoint(world));
+        this.world = new StreamingWorld(new NoiseTerrainGenerator(WORLD_SEED), LOAD_RADIUS_CHUNKS);
+        this.player = new Player(SPAWN);
         this.controller = new PlayerController(player, input);
         this.renderer = new Renderer(world);
         this.interaction = new BlockInteraction(world, player, input, renderer::onBlockChanged);
-    }
-
-    /** Eye position above the terrain surface in the center of the world. */
-    private static Vector3f spawnPoint(World world) {
-        for (int y = Chunk.SIZE_Y - 1; y >= 0; y--) {
-            if (world.block(8, y, 8) != BlockType.AIR) {
-                return new Vector3f(8.5f, y + 1 + SPAWN_EYE_HEIGHT, 8.5f);
-            }
-        }
-        return new Vector3f(8.5f, Chunk.SIZE_Y / 2.0f, 8.5f); // void world; float mid-air
+        world.addListener(renderer);
     }
 
     @Override
@@ -66,6 +56,13 @@ public final class ClaudecraftGame implements Game, AutoCloseable {
         }
         controller.update(dt);
         interaction.update();
+        world.update(playerChunk());
+    }
+
+    private ChunkPos playerChunk() {
+        return ChunkPos.containing(
+                (int) Math.floor(player.position().x()),
+                (int) Math.floor(player.position().z()));
     }
 
     @Override
@@ -82,5 +79,6 @@ public final class ClaudecraftGame implements Game, AutoCloseable {
     @Override
     public void close() {
         renderer.close();
+        world.close();
     }
 }
