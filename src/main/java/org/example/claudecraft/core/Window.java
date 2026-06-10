@@ -95,9 +95,9 @@ public final class Window implements AutoCloseable {
         glfwPollEvents();
     }
 
-    /** Returns true while the given {@code GLFW_KEY_*} key is held down. */
-    public boolean isKeyPressed(int key) {
-        return glfwGetKey(handle, key) == GLFW_PRESS;
+    /** Native GLFW handle, for other core wrappers ({@link Input}) only. */
+    long handle() {
+        return handle;
     }
 
     public int framebufferWidth() {

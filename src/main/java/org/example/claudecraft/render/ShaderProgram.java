@@ -1,7 +1,7 @@
 package org.example.claudecraft.render;
 
 import org.example.claudecraft.util.Resources;
-import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.joml.Vector3f;
 import org.lwjgl.system.MemoryStack;
 
@@ -100,7 +100,7 @@ public final class ShaderProgram implements AutoCloseable {
         glUniform3f(location(name), value.x, value.y, value.z);
     }
 
-    public void setUniform(String name, Matrix4f value) {
+    public void setUniform(String name, Matrix4fc value) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             FloatBuffer buffer = stack.mallocFloat(16);
             value.get(buffer);
