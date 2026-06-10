@@ -13,12 +13,15 @@ import org.example.claudecraft.world.Direction;
  *
  * <p>Quads are wound counter-clockwise seen from outside the block, so
  * {@code GL_CULL_FACE} with the default CCW front face works. Each vertex
- * carries atlas UVs (via {@link BlockTextures}) and the face normal, from
- * which the shader computes ambient + directional sun lighting.
+ * carries atlas UVs (via {@link BlockTextures}), the face normal, and a sky
+ * exposure factor: 0 when the air the face looks into has any solid block
+ * above it in its column, 1 otherwise. The shader uses it to drop sunlight
+ * and dim ambient inside holes, caves and under overhangs. The column scan is
+ * chunk-local, matching the neighbors-as-air culling policy.
  */
 public final class CullingChunkMesher implements ChunkMesher {
 
-    private static final int FLOATS_PER_VERTEX = 8;
+    private static final int FLOATS_PER_VERTEX = 9;
     private static final int VERTICES_PER_FACE = 4;
 
     // Corner offsets (4 corners × xyz) per face, CCW from outside the block.
@@ -43,6 +46,7 @@ public final class CullingChunkMesher implements ChunkMesher {
         FloatList vertices = new FloatList(4096);
         IntList indices = new IntList(1024);
         int vertexCount = 0;
+        int[] highestSolid = computeHighestSolid(chunk);
 
         for (int x = 0; x < Chunk.SIZE_X; x++) {
             for (int z = 0; z < Chunk.SIZE_Z; z++) {
@@ -52,10 +56,14 @@ public final class CullingChunkMesher implements ChunkMesher {
                         continue;
                     }
                     for (Direction direction : Direction.values()) {
-                        if (isFaceHidden(chunk, x, y, z, direction)) {
+                        int nx = x + direction.dx();
+                        int ny = y + direction.dy();
+                        int nz = z + direction.dz();
+                        if (Chunk.contains(nx, ny, nz) && chunk.block(nx, ny, nz).isOpaque()) {
                             continue;
                         }
-                        emitFace(vertices, x, y, z, direction, block);
+                        float skyLight = isSkyExposed(highestSolid, nx, ny, nz) ? 1.0f : 0.0f;
+                        emitFace(vertices, x, y, z, direction, block, skyLight);
                         indices.add(vertexCount);
                         indices.add(vertexCount + 1);
                         indices.add(vertexCount + 2);
@@ -70,14 +78,31 @@ public final class CullingChunkMesher implements ChunkMesher {
         return new MeshData(vertices.toArray(), indices.toArray());
     }
 
-    private static boolean isFaceHidden(Chunk chunk, int x, int y, int z, Direction direction) {
-        int nx = x + direction.dx();
-        int ny = y + direction.dy();
-        int nz = z + direction.dz();
-        return Chunk.contains(nx, ny, nz) && chunk.block(nx, ny, nz).isOpaque();
+    /** The y of the topmost solid block per column, or -1 for empty columns. */
+    private static int[] computeHighestSolid(Chunk chunk) {
+        int[] highest = new int[Chunk.SIZE_X * Chunk.SIZE_Z];
+        for (int x = 0; x < Chunk.SIZE_X; x++) {
+            for (int z = 0; z < Chunk.SIZE_Z; z++) {
+                int y = Chunk.SIZE_Y - 1;
+                while (y >= 0 && !chunk.block(x, y, z).isSolid()) {
+                    y--;
+                }
+                highest[x * Chunk.SIZE_Z + z] = y;
+            }
+        }
+        return highest;
     }
 
-    private static void emitFace(FloatList vertices, int x, int y, int z, Direction direction, BlockType block) {
+    /** True if the (air) cell at the given position has no solid block above it. */
+    private static boolean isSkyExposed(int[] highestSolid, int x, int y, int z) {
+        if (!Chunk.contains(x, y, z)) {
+            return true; // out-of-chunk neighbors count as open sky, like in culling
+        }
+        return y >= highestSolid[x * Chunk.SIZE_Z + z];
+    }
+
+    private static void emitFace(FloatList vertices, int x, int y, int z, Direction direction, BlockType block,
+                                 float skyLight) {
         float[] corners = cornersOf(direction);
         float[] uvSelectors = uvSelectorsOf(direction);
         TextureTile tile = BlockTextures.tileFor(block, direction);
@@ -93,6 +118,7 @@ public final class CullingChunkMesher implements ChunkMesher {
             vertices.add(direction.dx());
             vertices.add(direction.dy());
             vertices.add(direction.dz());
+            vertices.add(skyLight);
         }
     }
 

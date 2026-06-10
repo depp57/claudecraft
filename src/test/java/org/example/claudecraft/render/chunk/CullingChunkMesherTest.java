@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CullingChunkMesherTest {
 
-    private static final int FLOATS_PER_VERTEX = 8;
+    private static final int FLOATS_PER_VERTEX = 9;
     private static final int VERTICES_PER_FACE = 4;
     private static final int INDICES_PER_FACE = 6;
 
@@ -76,7 +76,25 @@ class CullingChunkMesherTest {
             assertEquals(0.0f, vertices[base + 5], "normal x");
             assertEquals(1.0f, vertices[base + 6], "normal y points up");
             assertEquals(0.0f, vertices[base + 7], "normal z");
+            assertEquals(1.0f, vertices[base + 8], "isolated block top sees the sky");
         }
+    }
+
+    @Test
+    void faceUnderAnOverhangIsShadowed() {
+        Chunk chunk = new Chunk();
+        chunk.setBlock(8, 100, 8, BlockType.STONE);
+        chunk.setBlock(8, 102, 8, BlockType.STONE); // overhang with an air gap at y = 101
+
+        float[] vertices = mesher.mesh(chunk).vertices();
+
+        // Blocks are visited bottom-up, faces in Direction order (UP first), so
+        // the lower block's UP face is vertices 0–3 and the upper block's UP
+        // face starts after the lower block's 6 faces, at vertex 24.
+        int lowerTopSkyLight = 8;
+        int upperTopSkyLight = 24 * FLOATS_PER_VERTEX + 8;
+        assertEquals(0.0f, vertices[lowerTopSkyLight], "face under the overhang is covered");
+        assertEquals(1.0f, vertices[upperTopSkyLight], "top of the overhang sees the sky");
     }
 
     @Test
