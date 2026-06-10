@@ -6,6 +6,7 @@ import org.example.claudecraft.world.ChunkListener;
 import org.example.claudecraft.world.ChunkPos;
 import org.example.claudecraft.world.World;
 import org.joml.FrustumIntersection;
+import org.joml.Vector3f;
 
 import java.util.Objects;
 
@@ -31,6 +32,12 @@ public final class Renderer implements ChunkListener, AutoCloseable {
     private static final float SKY_BLUE = 0.99f;
 
     private static final int ATLAS_TEXTURE_UNIT = 0;
+
+    /**
+     * Direction the sunlight travels, normalized: from high in the south-east
+     * sky. Fixed until the day/night cycle animates it.
+     */
+    private static final Vector3f SUN_DIRECTION = new Vector3f(-0.5f, -1.0f, -0.3f).normalize();
 
     private final World world;
     private final ShaderProgram shader;
@@ -93,6 +100,7 @@ public final class Renderer implements ChunkListener, AutoCloseable {
 
         shader.bind();
         shader.setUniform("uViewProjection", viewProjection);
+        shader.setUniform("uSunDirection", SUN_DIRECTION);
         shader.setUniform("uTexture", ATLAS_TEXTURE_UNIT);
         atlas.bind(ATLAS_TEXTURE_UNIT);
         chunkRenderer.draw(shader, frustum);

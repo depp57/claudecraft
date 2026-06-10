@@ -1,7 +1,7 @@
 #version 330 core
 
 in vec2 vTexCoord;
-in float vLight;
+flat in float vLight;
 
 uniform sampler2D uTexture;
 

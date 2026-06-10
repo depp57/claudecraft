@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CullingChunkMesherTest {
 
-    private static final int FLOATS_PER_VERTEX = 6;
+    private static final int FLOATS_PER_VERTEX = 8;
     private static final int VERTICES_PER_FACE = 4;
     private static final int INDICES_PER_FACE = 6;
 
@@ -59,7 +59,7 @@ class CullingChunkMesherTest {
     }
 
     @Test
-    void topFaceCarriesGrassTopUvsAndFullBrightness() {
+    void topFaceCarriesGrassTopUvsAndUpNormal() {
         Chunk chunk = new Chunk();
         chunk.setBlock(8, 100, 8, BlockType.GRASS);
 
@@ -71,10 +71,11 @@ class CullingChunkMesherTest {
             int base = corner * FLOATS_PER_VERTEX;
             float u = vertices[base + 3];
             float v = vertices[base + 4];
-            float light = vertices[base + 5];
             assertTrue(u >= grassTop.u0() && u <= grassTop.u1(), "u inside grass-top tile, got " + u);
             assertTrue(v >= grassTop.v0() && v <= grassTop.v1(), "v inside grass-top tile, got " + v);
-            assertEquals(1.0f, light, "top face is fully lit");
+            assertEquals(0.0f, vertices[base + 5], "normal x");
+            assertEquals(1.0f, vertices[base + 6], "normal y points up");
+            assertEquals(0.0f, vertices[base + 7], "normal z");
         }
     }
 

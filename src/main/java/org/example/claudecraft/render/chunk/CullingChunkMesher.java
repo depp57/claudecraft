@@ -13,12 +13,12 @@ import org.example.claudecraft.world.Direction;
  *
  * <p>Quads are wound counter-clockwise seen from outside the block, so
  * {@code GL_CULL_FACE} with the default CCW front face works. Each vertex
- * carries atlas UVs (via {@link BlockTextures}) and a per-face brightness
- * factor for depth perception until real lighting lands.
+ * carries atlas UVs (via {@link BlockTextures}) and the face normal, from
+ * which the shader computes ambient + directional sun lighting.
  */
 public final class CullingChunkMesher implements ChunkMesher {
 
-    private static final int FLOATS_PER_VERTEX = 6;
+    private static final int FLOATS_PER_VERTEX = 8;
     private static final int VERTICES_PER_FACE = 4;
 
     // Corner offsets (4 corners × xyz) per face, CCW from outside the block.
@@ -81,7 +81,6 @@ public final class CullingChunkMesher implements ChunkMesher {
         float[] corners = cornersOf(direction);
         float[] uvSelectors = uvSelectorsOf(direction);
         TextureTile tile = BlockTextures.tileFor(block, direction);
-        float brightness = brightnessOf(direction);
 
         for (int corner = 0; corner < VERTICES_PER_FACE; corner++) {
             int positionBase = corner * 3;
@@ -91,7 +90,9 @@ public final class CullingChunkMesher implements ChunkMesher {
             int uvBase = corner * 2;
             vertices.add(uvSelectors[uvBase] == 0.0f ? tile.u0() : tile.u1());
             vertices.add(uvSelectors[uvBase + 1] == 0.0f ? tile.v0() : tile.v1());
-            vertices.add(brightness);
+            vertices.add(direction.dx());
+            vertices.add(direction.dy());
+            vertices.add(direction.dz());
         }
     }
 
@@ -114,15 +115,6 @@ public final class CullingChunkMesher implements ChunkMesher {
             case SOUTH -> SOUTH_UVS;
             case WEST -> WEST_UVS;
             case EAST -> EAST_UVS;
-        };
-    }
-
-    private static float brightnessOf(Direction direction) {
-        return switch (direction) {
-            case UP -> 1.0f;
-            case DOWN -> 0.5f;
-            case NORTH, SOUTH -> 0.8f;
-            case WEST, EAST -> 0.65f;
         };
     }
 }
