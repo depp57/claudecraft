@@ -24,6 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build & Run
 
 ```bash
+export JAVA_HOME=$HOME/.jdks/openjdk-26.0.1   # no system java; always run Gradle on this JDK
 ./gradlew build          # compile + test
 ./gradlew test           # run JUnit 6 tests
 ./gradlew run            # launch the game (application plugin)
