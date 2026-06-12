@@ -32,13 +32,21 @@ public final class PlayerController {
     private final Player player;
     private final Input input;
     private final World world;
+    /** Invoked on the tick the player leaves the ground by jumping. */
+    private final Runnable jumpListener;
     /** Scratch vector reused every tick; update is a hot path and must not allocate. */
     private final Vector3f wishDirection = new Vector3f();
 
     public PlayerController(Player player, Input input, World world) {
+        this(player, input, world, () -> {
+        });
+    }
+
+    public PlayerController(Player player, Input input, World world, Runnable jumpListener) {
         this.player = Objects.requireNonNull(player, "player");
         this.input = Objects.requireNonNull(input, "input");
         this.world = Objects.requireNonNull(world, "world");
+        this.jumpListener = Objects.requireNonNull(jumpListener, "jumpListener");
     }
 
     /** Applies one simulation tick of look, movement and physics. */
@@ -52,6 +60,7 @@ public final class PlayerController {
         applyWalkInput(velocity);
         if (input.isKeyDown(GLFW_KEY_SPACE) && player.isOnGround()) {
             velocity.y = JUMP_SPEED;
+            jumpListener.run();
         }
         velocity.y = Math.max(velocity.y - GRAVITY * dt, -TERMINAL_FALL_SPEED);
 

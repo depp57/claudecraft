@@ -11,6 +11,7 @@ import org.joml.Vector3f;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT;
 import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
@@ -31,14 +32,23 @@ public final class BlockInteraction {
     private final Player player;
     private final Input input;
     private final BlockChangeListener changeListener;
+    /** Invoked with the type of each successfully broken block. */
+    private final Consumer<BlockType> breakListener;
     /** Scratch vector reused every tick; update is a hot path and must not allocate. */
     private final Vector3f lookDirection = new Vector3f();
 
     public BlockInteraction(World world, Player player, Input input, BlockChangeListener changeListener) {
+        this(world, player, input, changeListener, _ -> {
+        });
+    }
+
+    public BlockInteraction(World world, Player player, Input input, BlockChangeListener changeListener,
+                            Consumer<BlockType> breakListener) {
         this.world = Objects.requireNonNull(world, "world");
         this.player = Objects.requireNonNull(player, "player");
         this.input = Objects.requireNonNull(input, "input");
         this.changeListener = Objects.requireNonNull(changeListener, "changeListener");
+        this.breakListener = Objects.requireNonNull(breakListener, "breakListener");
     }
 
     /** Handles one simulation tick of click input. */
@@ -62,8 +72,10 @@ public final class BlockInteraction {
     }
 
     private void breakBlock(RayHit hit) {
+        BlockType broken = world.block(hit.x(), hit.y(), hit.z());
         if (world.setBlock(hit.x(), hit.y(), hit.z(), BlockType.AIR)) {
             changeListener.onBlockChanged(hit.x(), hit.y(), hit.z());
+            breakListener.accept(broken);
         }
     }
 
