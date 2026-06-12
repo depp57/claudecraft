@@ -23,6 +23,7 @@ public final class Camera {
     private float pitch;
     private final Matrix4f viewProjection = new Matrix4f();
     private final Matrix4f skyInverse = new Matrix4f();
+    private final Matrix4f projection = new Matrix4f();
 
     /** Updates the camera pose; angles in radians. */
     public void setPose(Vector3fc position, float yaw, float pitch) {
@@ -46,6 +47,15 @@ public final class Camera {
                 .rotateX(pitch)
                 .rotateY(yaw)
                 .invert();
+    }
+
+    /**
+     * The perspective projection alone, for geometry given directly in view
+     * space (e.g. the first-person arm). The returned matrix is reused across
+     * frames — consume it immediately.
+     */
+    public Matrix4fc projection(float aspectRatio) {
+        return projection.setPerspective(FOV_RADIANS, aspectRatio, NEAR_PLANE, FAR_PLANE);
     }
 
     /**

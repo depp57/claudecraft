@@ -48,6 +48,7 @@ public final class Renderer implements ChunkListener, AutoCloseable {
     private final ChunkRenderer chunkRenderer;
     private final SkyRenderer sky;
     private final CrosshairRenderer crosshair;
+    private final PlayerModelRenderer playerModel;
     private final Camera camera = new Camera();
     /** Reused every frame; render is a hot path and must not allocate. */
     private final FrustumIntersection frustum = new FrustumIntersection();
@@ -66,6 +67,7 @@ public final class Renderer implements ChunkListener, AutoCloseable {
         chunkRenderer = new ChunkRenderer(world, new CullingChunkMesher());
         sky = new SkyRenderer();
         crosshair = new CrosshairRenderer();
+        playerModel = new PlayerModelRenderer();
     }
 
     /**
@@ -94,11 +96,11 @@ public final class Renderer implements ChunkListener, AutoCloseable {
 
     /**
      * Renders one frame from the camera's current pose at the given time of
-     * day.
+     * day, plus the player's body or view-model arm depending on the view.
      *
      * @param aspectRatio framebuffer width / height, must be positive
      */
-    public void render(float aspectRatio, DayNightCycle cycle) {
+    public void render(float aspectRatio, DayNightCycle cycle, ViewPose viewPose) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         chunkRenderer.uploadCompleted();
@@ -107,6 +109,8 @@ public final class Renderer implements ChunkListener, AutoCloseable {
         cycle.sunDirection(sunDirection);
         zenithColor.set(ZENITH_NIGHT).lerp(ZENITH_DAY, daylight);
         horizonColor.set(HORIZON_NIGHT).lerp(HORIZON_DAY, daylight);
+        float ambient = lerp(AMBIENT_NIGHT, AMBIENT_DAY, daylight);
+        float sunStrength = SUN_STRENGTH_DAY * daylight;
 
         var viewProjection = camera.viewProjection(aspectRatio);
         frustum.set(viewProjection);
@@ -116,8 +120,8 @@ public final class Renderer implements ChunkListener, AutoCloseable {
         shader.bind();
         shader.setUniform("uViewProjection", viewProjection);
         shader.setUniform("uSunDirection", sunDirection);
-        shader.setUniform("uAmbient", lerp(AMBIENT_NIGHT, AMBIENT_DAY, daylight));
-        shader.setUniform("uSunStrength", SUN_STRENGTH_DAY * daylight);
+        shader.setUniform("uAmbient", ambient);
+        shader.setUniform("uSunStrength", sunStrength);
         shader.setUniform("uCameraPosition", camera.position());
         shader.setUniform("uFogColor", horizonColor);
         shader.setUniform("uFogStart", FOG_START);
@@ -126,6 +130,14 @@ public final class Renderer implements ChunkListener, AutoCloseable {
         atlas.bind(ATLAS_TEXTURE_UNIT);
         chunkRenderer.draw(shader, frustum);
         shader.unbind();
+
+        switch (viewPose) {
+            case ViewPose.ThirdPerson(PlayerModelState model) ->
+                    playerModel.draw(viewProjection, sunDirection, ambient, sunStrength, model);
+            case ViewPose.FirstPerson(float attackSwing) ->
+                    playerModel.drawFirstPersonArm(
+                            camera.projection(aspectRatio), sunDirection, ambient, sunStrength, attackSwing);
+        }
 
         crosshair.draw(aspectRatio);
     }
@@ -136,6 +148,7 @@ public final class Renderer implements ChunkListener, AutoCloseable {
 
     @Override
     public void close() {
+        playerModel.close();
         crosshair.close();
         sky.close();
         chunkRenderer.close();

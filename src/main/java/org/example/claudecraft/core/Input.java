@@ -17,6 +17,8 @@ public final class Input {
 
     /** Buttons with edge detection: {@code GLFW_MOUSE_BUTTON_LEFT} and {@code _RIGHT}. */
     private static final int TRACKED_BUTTONS = 2;
+    /** Keys with edge detection; extend when more just-pressed keys are needed. */
+    private static final int[] TRACKED_KEYS = {GLFW_KEY_F5};
 
     private final Window window;
 
@@ -29,6 +31,8 @@ public final class Input {
     private float mouseDeltaY;
     private final boolean[] buttonDown = new boolean[TRACKED_BUTTONS];
     private final boolean[] buttonJustPressed = new boolean[TRACKED_BUTTONS];
+    private final boolean[] keyWasDown = new boolean[TRACKED_KEYS.length];
+    private final boolean[] keyJustPressed = new boolean[TRACKED_KEYS.length];
 
     public Input(Window window) {
         this.window = Objects.requireNonNull(window, "window");
@@ -62,6 +66,24 @@ public final class Input {
             buttonJustPressed[button] = down && !buttonDown[button];
             buttonDown[button] = down;
         }
+        for (int i = 0; i < TRACKED_KEYS.length; i++) {
+            boolean down = isKeyDown(TRACKED_KEYS[i]);
+            keyJustPressed[i] = down && !keyWasDown[i];
+            keyWasDown[i] = down;
+        }
+    }
+
+    /**
+     * Returns true if the given key went from released to pressed since the
+     * previous tick. Only keys listed in {@code TRACKED_KEYS} are supported.
+     */
+    public boolean isKeyJustPressed(int key) {
+        for (int i = 0; i < TRACKED_KEYS.length; i++) {
+            if (TRACKED_KEYS[i] == key) {
+                return keyJustPressed[i];
+            }
+        }
+        throw new IllegalArgumentException("Key not tracked for edge detection: " + key);
     }
 
     /**

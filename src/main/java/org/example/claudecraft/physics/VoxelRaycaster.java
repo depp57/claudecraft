@@ -83,6 +83,29 @@ public final class VoxelRaycaster {
         }
     }
 
+    /**
+     * Distance along the ray at which it crossed into the hit block, derived
+     * from the entry face's plane. Pass the same origin and a <em>normalized</em>
+     * direction as the {@link #raycast} call that produced the hit; returns 0
+     * for the degenerate origin-inside-a-block hit.
+     */
+    public static float hitDistance(RayHit hit, Vector3fc origin, Vector3fc direction) {
+        Direction face = hit.face();
+        float t;
+        if (face.dx() != 0) {
+            t = planeDistance(hit.x() + (face.dx() > 0 ? 1.0f : 0.0f), origin.x(), direction.x());
+        } else if (face.dy() != 0) {
+            t = planeDistance(hit.y() + (face.dy() > 0 ? 1.0f : 0.0f), origin.y(), direction.y());
+        } else {
+            t = planeDistance(hit.z() + (face.dz() > 0 ? 1.0f : 0.0f), origin.z(), direction.z());
+        }
+        return Math.max(t, 0.0f);
+    }
+
+    private static float planeDistance(float plane, float originCoord, float dirComponent) {
+        return dirComponent == 0.0f ? 0.0f : (plane - originCoord) / dirComponent;
+    }
+
     /** Ray parameter t at which the ray leaves the start cell along one axis. */
     private static float boundaryDistance(float originCoord, int cell, float dirComponent, int step) {
         if (step == 0) {
